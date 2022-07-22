@@ -1,5 +1,5 @@
 {
-  "name": "@tsndr/cloudflare-worker-router",
+  "name": "@mexican-man/cloudflare-worker-pages",
   "version": "2.0.1",
   "description": "",
   "main": "index.js",
@@ -9,27 +9,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tsndr/cloudflare-worker-router.git"
+    "url": "git+https://github.com/Mexican-Man/cloudflare-worker-router.git"
   },
   "keywords": [
     "cloudflare",
     "cloudflare-worker",
     "cloudflare-workers",
-    "express",
-    "expressjs",
-    "framework",
+    "cloudflare-pages",
+    "pages",
     "middleware",
     "router",
     "routing",
     "worker",
     "workers"
   ],
-  "author": "Tobias Schneider",
+  "author": "Cole Crouter",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tsndr/cloudflare-worker-router/issues"
+    "url": "https://github.com/Mexican-Man/cloudflare-worker-router/issues"
   },
-  "homepage": "https://github.com/tsndr/cloudflare-worker-router#readme",
+  "homepage": "https://github.com/Mexican-Man/cloudflare-worker-router#readme",
   "devDependencies": {
     "@cloudflare/workers-types": "^3.13.0",
     "typescript": "^4.7.4"

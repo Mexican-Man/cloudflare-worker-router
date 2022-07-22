@@ -1,10 +1,11 @@
-# Cloudflare Workers Router
+### Fork of [tsndr/cloudflare-worker-router](https://github.com/tsndr/cloudflare-worker-router)
 
-Cloudflare Workers Router is a super lightweight router (2.30 KiB) with middleware support and **ZERO dependencies** for [Cloudflare Workers](https://workers.cloudflare.com/).
+# Cloudflare Workers Pages
 
-When I was trying out Cloudflare Workers I almost immediately noticed how fast it was compared to other serverless offerings. So I wanted to build a full-fledged API to see how it performs doing real work, but since I wasn't able to find a router that suited my needs I created my own.
+This package aims to mildly recreate the workflow of Cloudflare Pages [Functions](https://developers.cloudflare.com/pages/platform/functions/). I had to migrate an API from Pages to Workers, due to its lack of bindings for features available in Workers, despite them running on the same platform. I found [tsndr/cloudflare-worker-router](https://github.com/tsndr/cloudflare-worker-router), but I didn't quite understand how to take advantage of routes and middleware properly. I've gone and refactored the package to use `PagesFunction` from `@cloudflare/workers-types`, rather than the types types provided by tsndr.
 
-I worked a lot with [Express.js](https://expressjs.com/) in the past and really enjoyed their middleware approach, but since none of the available Cloudflare Worker routers offered middleware support at the time, I felt the need to create this router.
+It's worth noting that this does strip some functionality from the parent repository, because I'm trying to recreate Pages Functions as faithfully as possible.
+
 
 
 ## Contents
@@ -19,70 +20,72 @@ I worked a lot with [Express.js](https://expressjs.com/) in the past and really 
 ### Simple Example
 
 ```javascript
-import Router from '@tsndr/cloudflare-worker-router'
+import Router from '@mexican-man/cloudflare-worker-pages'
 
 // Initialize router
 const router = new Router()
 
-// Enabling buildin CORS support
-router.cors()
-
-// Register global middleware
-router.use(({ req, res, next }) => {
-  res.headers.set('X-Global-Middlewares', 'true')
-  next()
-})
+// Register middleware
+router.onRequest("/v1", true, ({ request, next }) => {
+  if (request.headers.has("Authorization")) {
+    return next();
+  }
+  return new Response(401);
+});
 
 // Simple get
-router.get('/user', ({ req, res }) => {
-  res.body = {
-    data: {
-      id: 1,
-      name: 'John Doe'
-    }
-  }
-})
+router.onRequestGet('/v1/user', () => {
+  return new Response(
+    JSON.stringify({
+      data: {
+        id: 1,
+        name: 'John Doe'
+      }
+    });
+  );
+});
 
 // Post route with url parameter
-router.post('/user/:id', ({ req, res }) => {
-
-  const userId = req.params.id
+router.onRequestPost('/user/[id]', ({ params }) => {
+  // using [] or [[]] is supported 
+  const userId = params.id
   
   // Do stuff...
   
   if (errorDoingStuff) {
-    res.status = 400
-    res.body = {
-      error: 'User did stupid stuff!'
-    }
-    return
+    return new Response(
+      JSON.stringify({
+        error: 'User did stupid stuff!'
+      }, { status: 200 }));
   }
   
-  res.status = 204
+  return new Response(null, { status: 204 })
 })
 
 // Delete route using a middleware
-router.delete('/user/:id', ({ req, res, next }) => {
+router.onRequestDelete('/user/[id]', ({ params, next }) => {
 
   if (!apiTokenIsCorrect) {
-    res.status = 401
-    return
+    return new Response(null, { status: 401 })
   }
   
   await next()
 }, (req, res) => {
 
-  const userId = req.params.id
+  const userId = params.id
   
   // Do stuff...
 })
 
 // Listen Cloudflare Workers Fetch Event
 export default {
-  async fetch(request, env) {
-    return router.handle(env, request)
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return Router.handle({
+      request, env, ...ctx, next: () => ({} as Promise<Response>), data: {}, params: {},
+      functionPath: ''
+    });
   }
-}
+};
 ```
 
 
@@ -97,98 +100,32 @@ Enable or disable debug mode. Which will return the `error.stack` in case of an 
 State is a `boolean` which determines if debug mode should be enabled or not (default: `true`)
 
 
-### `router.use([...handlers])`
+### `router.onRequest([...PagesFunction])`
 
 Register a global middleware handler.
 
 
-#### `handler(ctx)`
-
-Handler is a `function` which will be called for every request.
-
-#### `ctx`
-Object containing `env`, [`req`](#req-object), [`res`](#res-object), `next`
-
-
-### `router.cors([config])`
-
-If enabled will overwrite other `OPTIONS` requests.
-
-
-#### `config` (object, optional)
-
-Key                    | Type      | Default Value
----------------------- | --------- | -------------
-`allowOrigin`          | `string`  | `*`
-`allowMethods`         | `string`  | `*`
-`allowHeaders`         | `string`  | `*`
-`maxAge`               | `integer` | `86400`
-`optionsSuccessStatus` | `integer` | `204`
-
-
-### `router.any(url, [...handlers])`
-### `router.connect(url, [...handlers])`
-### `router.delete(url, [...handlers])`
-### `router.get(url, [...handlers])`
-### `router.head(url, [...handlers])`
-### `router.options(url, [...handlers])`
-### `router.patch(url, [...handlers])`
-### `router.post(url, [...handlers])`
-### `router.put(url, [...handlers])`
-### `router.trace(url, [...handlers])`
+### `router.onRequest(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestDelete(url, isMiddleware,  [...PagesFunction])`
+### `router.onRequestGet(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestHead(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestOptions(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestPatch(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestPost(url, isMiddleware, [...PagesFunction])`
+### `router.onRequestPut(url, isMiddleware, [...PagesFunction])`
 
 #### `url` (string)
 
 The URL starting with a `/`.
-Supports the use of dynamic parameters, prefixed with a `:` (i.e. `/user/:userId/edit`) which will be available through the [`req`-Object](#req-object) (i.e. `req.params.userId`).
+Supports the use of dynamic parameters, denoted by `[id]` for a single slug, and `[[id]]`, to match every following directory, which would results in `params.id` containing `string` or `string[]` respectively.
 
+#### `isMiddleware` (boolean)
+Whether or not this/these handlers should be treated as middleware (they should chain onto deeper requests).
 
-#### `handlers` (function, optional)
-
-An unlimited number of functions getting [`req`](#req-object) and [`res`](#res-object) passed into them.
-
-
-### `ctx`-Object
-Key       | Type                | Description
---------- | ------------------- | -----------
-`env`     | `object`            | Environment
-`req`     | `req`-Object        | Request Object
-`res`     | `res`-Object        | Response Object
-`next`    | `next`-Handler      | Next Handler
-
-
-### `req`-Object
-
-Key       | Type                | Description
---------- | ------------------- | -----------
-`body`    | `object` / `string` | Only available if method is `POST`, `PUT`, `PATCH` or `DELETE`. Contains either the received body string or a parsed object if valid JSON was sent.
-`headers` | `Headers`           | Request [Headers Object](https://developer.mozilla.org/en-US/docs/Web/API/Headers)
-`method`  | `string`            | HTTP request method
-`params`  | `object`            | Object containing all parameters defined in the url string
-`query`   | `object`            | Object containing all query parameters
-
-
-### `res`-Object
-
-Key         | Type                | Description
------------ | ------------------- | -----------
-`body`      | `object` / `string` | Either set an `object` (will be converted to JSON) or a string
-`headers`   | `Headers`           | Response [Headers Object](https://developer.mozilla.org/en-US/docs/Web/API/Headers)
-`status`    | `integer`           | Return status code (default: `204`)
-`webSocket` | `WebSocket`         | Upgraded websocket connection
-
+#### `PagesFunction`
+See [Cloudflare docs](https://developers.cloudflare.com/pages/platform/functions/#using-typescript) for more info.
 
 ## Setup
-
----
-### ❗️ Compatibility ❗️
-
-CLI Tool | Router
--------- | ------
-[wrangler2](https://github.com/cloudflare/wrangler2#readme) | Use `v2.x.x` or later.
-[@cloudflare/wrangler](https://github.com/cloudflare/wrangler#readme) | Use `v1.x.x`, [here](https://github.com/tsndr/cloudflare-worker-router/tree/legacy#readme).
-
-See [Migration from v1.x.x to v2.x.x](https://github.com/tsndr/cloudflare-worker-router/blob/main/MIGRATION.md#migration-guide) if you want to update.
 
 ---
 
@@ -197,7 +134,7 @@ See [Migration from v1.x.x to v2.x.x](https://github.com/tsndr/cloudflare-worker
 Please follow Cloudflare's [Get started guide](https://developers.cloudflare.com/workers/get-started/guide/), then install the router using this command
 
 ```bash
-npm i -D @tsndr/cloudflare-worker-router
+npm i @mexican-man/cloudflare-worker-page
 ```
 
 and replace your `index.ts` / `index.js` with one of the following scripts
@@ -217,6 +154,7 @@ export interface Env {
   //
   // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
   // MY_BUCKET: R2Bucket;
+  ASSETS: { fetch: typeof fetch; };
 }
 
 const router = new Router()
@@ -224,10 +162,13 @@ const router = new Router()
 // TODO: add your routes here
 
 export default {
-    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-        return router.handle(env, request)
-    }
-}
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return Router.handle({
+      request, env, ...ctx, next: () => ({} as Promise<Response>), data: {}, params: {},
+      functionPath: ''
+    });
+  }
+};
 ```
 </details>
 
@@ -242,9 +183,31 @@ const router = new Router()
 // TODO: add your routes here
 
 export default {
-    async fetch(request, env, ctx) {
-        return router.handle(env, request)
-    }
-}
+  async fetch(request, env, ctx) {
+    return Router.handle({
+      request, env, ...ctx, next: () => ({}), data: {}, params: {},
+      functionPath: ''
+    });
+  }
+};
 ```
 </details>
+
+Of course, this doesn't quite let you maintain the file structure of the `functions` folder from Pages. To substitute that, you can `export` your endpoint functions other files, then import and register those in your `index.js/ts` file.
+
+`index.ts`
+```ts
+import * as Users from '@routes/v1/users/[id]';
+
+export const router = new Router()
+router.onRequestGet('/v1/users/[id]', false, ...(Array.isArray(endpoint) ? endpoint : [endpoint]))
+```
+
+`@routes/v1/users/[id]`
+```ts
+export const onRequestGet: PagesFunction = async () => {
+    return new Response();
+};
+```
+
+If using a lot of files, I'd suggest automating this.
