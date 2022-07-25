@@ -1,6 +1,6 @@
 {
   "name": "@mexican-man/cloudflare-worker-pages",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "main": "index.js",
   "types": "index.d.ts",
