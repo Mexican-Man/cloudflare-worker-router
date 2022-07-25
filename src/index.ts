@@ -52,8 +52,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestDelete(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('DELETE', url, isMiddleware, handlers);
+    public onRequestDelete<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('DELETE', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -64,8 +68,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestGet(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('GET', url, isMiddleware, handlers);
+    public onRequestGet<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('GET', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -76,8 +84,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestHead(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('HEAD', url, isMiddleware, handlers);
+    public onRequestHead<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('HEAD', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -88,8 +100,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestOptions(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('OPTIONS', url, isMiddleware, handlers);
+    public onRequestOptions<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('OPTIONS', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -100,8 +116,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestPatch(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('PATCH', url, isMiddleware, handlers);
+    public onRequestPatch<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('PATCH', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -112,8 +132,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestPost(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('POST', url, isMiddleware, handlers);
+    public onRequestPost<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('POST', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -124,8 +148,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequestPut(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('PUT', url, isMiddleware, handlers);
+    public onRequestPut<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('PUT', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -136,8 +164,12 @@ export default class Router {
      * @param  {PagesFunction[]} handlers 
      * @returns {Router}
      */
-    public onRequest(url: string, isMiddleware: boolean, ...handlers: PagesFunction[]): Router {
-        return this.register('*', url, isMiddleware, handlers);
+    public onRequest<
+        Env = unknown,
+        Params extends string = any,
+        Data extends Record<string, unknown> = Record<string, unknown>
+    >(url: string, isMiddleware: boolean, ...handlers: PagesFunction<Env, Params, Data>[]): Router {
+        return this.register('*', url, isMiddleware, handlers as any);
     }
 
     /**
@@ -266,8 +298,9 @@ export default class Router {
                     });
                     return handlers[index]({ ...ctx, next: async () => runner(index + 1) } as EventContext<Env, P, any>);
                 }
-                if (typeof handlers[index] === 'undefined')
+                if (typeof handlers[index] === 'undefined') {
                     return new Response(this.debugMode ? 'Handler not found!' : null, { status: 404 });
+                }
                 return runner(index + 1);
             };
             return runner(0);

@@ -199,13 +199,19 @@ Of course, this doesn't quite let you maintain the file structure of the `functi
 ```ts
 import * as Users from '@routes/v1/users/[id]';
 
+export interface Env {
+  // ...
+}
+
 export const router = new Router()
 router.onRequestGet('/v1/users/[id]', false, ...(Array.isArray(endpoint) ? endpoint : [endpoint]))
 ```
 
 `@routes/v1/users/[id]`
 ```ts
-export const onRequestGet: PagesFunction = async () => {
+import type { Env } from '../../../../index.ts';
+
+export const onRequestGet: PagesFunction<Env> = async () => {
     return new Response();
 };
 ```
