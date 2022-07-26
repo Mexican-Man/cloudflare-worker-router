@@ -259,11 +259,11 @@ export default class Router {
             return routeArr.every((route, i) => {
                 if (route === pathArr[i]) {
                     return true;
-                } else if (route.match(/^\[[a-zA-Z0-9]+\]$/)) {
+                } else if (pathArr[i] && /^\[[a-zA-Z0-9]+\]$/.test(route)) {
                     return true;
                 }
                 return false;
-            }) || (routeArr.length === pathArr.length && routeArr.slice(-1)?.[0]?.match(/^\[\[[a-zA-Z0-9]+\]\]$/));
+            }) || (routeArr.length === pathArr.length && /^\[\[[a-zA-Z0-9]+\]\]$/.test(routeArr.slice(-1)[0]));
         });
     }
 
